@@ -58,15 +58,15 @@ SecRule REQUEST_HEADERS:Content-Length "!@rx ^\d+$" \
     tag:'paranoia-level/1',\
     tag:'OWASP_CRS',\
     tag:'capec/1000/210/272',\
-    ver:'OWASP_CRS/3.4.0-dev',\
+    ver:'OWASP_CRS/4.28.0',\
     severity:'CRITICAL',\
-    setvar:'tx.anomaly_score_pl1=+%{tx.critical_anomaly_score}'"
+    setvar:'tx.inbound_anomaly_score_pl1=+%{tx.critical_anomaly_score}'"
 ```
 
 {{% notice info %}}
 Notice that the anomaly score variable name has the suffix `pl1`. Internally, CRS keeps track of anomaly scores on a *per* [*paranoia level*]({{< ref "2-2-paranoia_levels" >}} "Page describing paranoia levels.") basis. The individual paranoia level anomaly scores are added together before each round of blocking evaluation takes place, allowing the total combined inbound or outbound score to be compared to the relevant anomaly score threshold.
 
-Tracking the anomaly score per paranoia level allows for clever scoring mechanisms to be employed, such as the [executing paranoia level]({{< ref "2-2-paranoia_levels#moving-to-a-higher-paranoia-level" >}} "Section describing the executing paranoia level feature.") feature.
+Tracking the anomaly score per paranoia level allows for clever scoring mechanisms to be employed, such as the [detection paranoia level]({{< ref "2-2-paranoia_levels#moving-to-a-higher-paranoia-level" >}} "Section describing the detection paranoia level feature.") feature.
 {{% /notice %}}
 
 The rules files `REQUEST-949-BLOCKING-EVALUATION.conf` and `RESPONSE-959-BLOCKING-EVALUATION.conf` are responsible for executing the inbound (request) and outbound (response) rounds of blocking evaluation, respectively. The rules in these files calculate the total inbound or outbound transactional anomaly score and then make a blocking decision, by comparing the result to the defined threshold and taking blocking action if required.
@@ -212,7 +212,7 @@ If early blocking is not enabled, there's a chance that the web server will inte
 
 #### Enabling the Early Blocking Option
 
-If using a native CRS installation on a web application firewall, the early blocking option can be enabled in the file `crs-setup.conf`. This is done by uncommenting rule 900120, which sets the variable `tx.blocking_early` to 1 in order to enable early blocking. CRS otherwise gives this variable a default value of 0, meaning that early blocking is disabled by default.
+If using a native CRS installation on a web application firewall, the early blocking option can be enabled in the file `crs-setup.conf`. This is done by uncommenting rule 900120, which sets the variable `tx.early_blocking` to 1 in order to enable early blocking. CRS otherwise gives this variable a default value of 0, meaning that early blocking is disabled by default.
 
 ```apache
 SecAction \
@@ -221,7 +221,7 @@ SecAction \
   nolog,\
   pass,\
   t:none,\
-  setvar:tx.blocking_early=1"
+  setvar:tx.early_blocking=1"
 ```
 
 If running CRS where it has been integrated into a commercial product or CDN then support for the early blocking option varies. Some vendors may allow it to be enabled through the GUI, through a custom rule, or they might not allow it to be enabled at all.

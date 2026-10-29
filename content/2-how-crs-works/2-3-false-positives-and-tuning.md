@@ -116,7 +116,7 @@ The different rule exclusion types and methods are summarized in the table below
 
 *\*Can also exclude ranges of rules or multiple space separated rules.*
 
-*\*\*Can also exclude ranges of rules (not currently supported in ModSecurity v3).*
+*\*\*Can also exclude ranges of rules.*
 
 {{% notice style="tip" icon="file-arrow-down" %}}
 This table is available as a well presented, downloadable [Rule Exclusion Cheatsheet](https://www.netnea.com/cms/rule-exclusion-cheatsheet-download) from Christian Folini.
@@ -153,6 +153,15 @@ SecRuleRemoveById "913000-913999"
 ```
 
 Excluding rules using rule ranges may be more useful than excluding using tags in situations where tags are less relevant or where tags vary across the rules in question. For example, a rule range may be the most appropriate solution if the goal is to remove all rules contained in a single file, regardless of how the rules are tagged.
+
+Support for rule ranges is not identical across all directives/actions and engines. The table below summarizes current behavior when a rule **range** is used with `ById` exclusions:
+
+| Directive / action             | ModSecurity v2 | ModSecurity v3 | Coraza |
+| ------------------------------ | -------------- | -------------- | ------ |
+| `SecRuleRemoveById`            | ✅ Full range   | ✅ Full range   | ✅ Full range |
+| `ctl:ruleRemoveById`           | ✅ Full range   | ✅ Full range   | ✅ Full range |
+| `SecRuleUpdateTargetById`      | ✅ Full range   | ⚠️ First ID only | ✅ Full range |
+| `ctl:ruleRemoveTargetById`     | ✅ Full range   | ⚠️ First ID only | ✅ Full range |
 
 #### Support for Regular Expressions
 
@@ -352,7 +361,7 @@ SecRule REQUEST_URI "@beginsWith /webapp/login.html" \
 
 *(Runtime RE. Selectively allowing Content Type.)*
 
-**Scenario**: A POST request with a Content Type of `text/plain` is being sent to `/webapp/login.html`, this request is blocked because `text/plain` is not in the list of allowed Content Types for rule `920420`. CRS only allows Content Types it knows the WAF can safely parse. It is decided to allow the `text/plain` Content Type only for `/webapp/login.html` and to enable the approate body parser, which is JSON for this example. A chain rule it utilized to ensure the JSON body processor is only switched on for the `text/plain` Content Type.
+**Scenario**: A POST request with a Content Type of `text/plain` is being sent to `/webapp/login.html`, this request is blocked because `text/plain` is not in the list of allowed Content Types for rule `920420`. CRS only allows Content Types it knows the WAF can safely parse. It is decided to allow the `text/plain` Content Type only for `/webapp/login.html` and to enable the approate body parser, which is JSON for this example. A chain rule is utilized to ensure the JSON body processor is only switched on for the `text/plain` Content Type.
 
 **Rule Exclusion:**
 
@@ -372,7 +381,7 @@ SecRule REQUEST_URI "@beginsWith /webapp/login.html" \
 ```
 
 {{% notice style="warning" icon="ban" %}}
-ModSecurity/Coraza relies on the Content Type to correctly parse a request body, allowing additional Content Types may result in a complete WAF bypass if the correct body parser has not been activated. The example provided here should be safe.
+ModSecurity/Coraza relies on the Content Type to correctly parse a request body, allowing additional Content Types may result in a complete WAF bypass if the correct body parser has not been activated.
 {{% /notice %}}
 
 {{% notice style="tip" icon="code-branch" %}}
@@ -383,20 +392,16 @@ Multiple conditions can also be chained together to create a logical AND by usin
 
 #### Rule Exclusion Packages
 
-CRS ships with prebuilt *rule exclusion packages* for a selection of popular web applications. These packages contain application-specific rule exclusions designed to prevent false positives from occurring when CRS is put in front of one of these web applications.
+*Rule exclusion packages* provide application-specific rule exclusions for a selection of popular web applications, designed to prevent false positives from occurring when CRS is put in front of one of these web applications.
 
 The packages should be viewed as a good *starting point* from which to build upon. Some false positives may still occur, for example if working at a high paranoia level, if using a very new or old version of the application, if using plug-ins, add-ons, or user customizations.
 
-If using a native CRS installation, rule exclusion packages can be enabled in the file `crs-setup.conf`. Modify rule 900130 to select the web applications in question, e.g. to enable the DokuWiki rule exclusion package use `setvar:tx.crs_exclusions_dokuwiki=1`, and then uncomment the rule to enable it.
+As of CRS 4, rule exclusion packages are no longer part of the rule set itself: each one is distributed as a separate plugin. To use one, install the plugin for the web application in question as described on the [plugins]({{% ref "4-about-plugins/" %}}) page. Once installed, a plugin is enabled by default.
 
 If running CRS where it has been integrated into a commercial product or CDN then support varies. Some vendors expose rule exclusion packages in the GUI while other vendors require custom rules to be written which set the necessary variables. Unfortunately, there are also vendors that don't allow rule exclusion packages to be used at all.
 
 {{% notice style="tip" icon="location-dot" %}}
-If running multiple web applications, it is highly recommended to enable a rule exclusion package only for the location where the corresponding web application resides. For example, to enable the WordPress rule exclusion package only for locations under '/wordpress', a rule like the following could be used:
-
-```apache
-SecRule REQUEST_URI "@beginsWith /wordpress/" setvar:tx.crs_exclusions_wordpress=1...
-```
+If running multiple web applications, it is highly recommended to enable a rule exclusion package only for the application it belongs to. Plugins can be limited to a single location, `WebAppID`, or hostname, as described under [conditionally enable plugins for multi-application environments]({{% ref "4-about-plugins/4-1-plugins#conditionally-enable-plugins-for-multi-application-environments" %}}).
 {{% /notice %}}
 
 Rule exclusion packages are currently available for the following web applications:
