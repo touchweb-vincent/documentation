@@ -316,7 +316,7 @@ SecRule REQUEST_URI "@beginsWith /web_app_1/content" \
 
 ```apache
 # CRS Rule Exclusion: 941150 - XSS Filter - Category 5: Disallowed HTML Attributes
-SecRule REQUEST_URI "@rx ^/dynamic/new_post" \
+SecRule REQUEST_URI "@beginsWith ^/dynamic/new_post" \
     "id:1020,\
     phase:1,\
     pass,\
